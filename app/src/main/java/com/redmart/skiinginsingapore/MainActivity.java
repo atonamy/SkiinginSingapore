@@ -33,11 +33,13 @@ public class MainActivity extends AppCompatActivity {
         public int length;
         public final int droppingFrom;
         public final int droppingTo;
+        public List<Integer> path;
 
-        public Result(int length, int droppingFrom, int droppingTo) {
+        public Result(int length, int droppingFrom, int droppingTo, List<Integer> path) {
             this.length = length;
             this.droppingTo = droppingTo;
             this.droppingFrom = droppingFrom;
+            this.path = path;
         }
     }
 
@@ -91,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
         backgroundTask = null;
         allMap = null;
         httpConnection = null;
-        maxResult = new Result(0, 0, 0);
+        maxResult = new Result(0,0,0,null);
         sortedCoords = null;
     }
 
@@ -190,31 +192,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected Result max(Result r1, Result r2, int increment) {
-        if(r1.length >= r2.length + increment)
-            return r1;
-        else
-        {
+        if((r1.length == r2.length + increment && (r1.droppingFrom - r1.droppingTo) < (r2.droppingFrom - r2.droppingTo)) || r1.length < r2.length + increment) {
             r2.length += increment;
             return r2;
-
         }
+        else
+            return r1;
     }
 
-    protected Result findLongestPath(final int x, final int y, final int droppingFrom) {
-        Result r = new Result(1, droppingFrom, allMap[x][y]);
-        if(y < allMap[x].length-1 && allMap[x][y] > allMap[x][y+1]) r = max(r, findLongestPath(x, y+1, droppingFrom), 1);
-        if(y > 0 && allMap[x][y] > allMap[x][y-1]) r = max(r, findLongestPath(x, y-1, droppingFrom), 1);
-        if(x < allMap.length-1 && allMap[x][y] > allMap[x+1][y]) r = max(r, findLongestPath(x+1, y, droppingFrom), 1);
-        if(x > 0 && allMap[x][y] > allMap[x-1][y]) r = max(r, findLongestPath(x-1, y, droppingFrom), 1);
-        maxResult=max(maxResult,r, 0);
-        return r;
+    protected Result findLongestPath(final int x, final int y, final int droppingFrom, List<Integer> path) {
+        Result result = new Result(1, droppingFrom, allMap[x][y], path);
+        result.path.add(allMap[x][y]);
+        if(y < allMap[x].length-1 && allMap[x][y] > allMap[x][y+1]) result = max(result, findLongestPath(x, y+1, droppingFrom, result.path), 1);
+        if(y > 0 && allMap[x][y] > allMap[x][y-1]) result = max(result, findLongestPath(x, y-1, droppingFrom, result.path), 1);
+        if(x < allMap.length-1 && allMap[x][y] > allMap[x+1][y]) result = max(result, findLongestPath(x+1, y, droppingFrom, result.path), 1);
+        if(x > 0 && allMap[x][y] > allMap[x-1][y]) result = max(result, findLongestPath(x-1, y, droppingFrom, result.path), 1);
+        maxResult = max(maxResult,result, 0);
+        return result;
     }
 
     protected void search() {
         Iterator<Coords> i_coords = sortedCoords.iterator();
         while(i_coords.hasNext()) {
             Coords coords = i_coords.next();
-            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y]);
+            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y], new LinkedList<Integer>());
             if(r.length >= r.droppingFrom || maxResult.length >= r.droppingFrom)
                 break;
         }
@@ -223,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
     protected void showResult() {
         int drop = (maxResult.droppingFrom - maxResult.droppingTo);
         String message = getResources().getString(R.string.success);
-        message = String.format(message, drop, maxResult.droppingFrom, maxResult.droppingTo, maxResult.length);
+       message = String.format(message, drop, maxResult.droppingFrom, maxResult.droppingTo, maxResult.length);
 
         showDialog(getResources().getString(R.string.success_title), message, true);
 
