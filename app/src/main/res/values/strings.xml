@@ -1,0 +1,14 @@
+<resources>
+    <!-- http://s3-ap-southeast-1.amazonaws.com/geeks.redmart.com/coding-problems/map.txt https://api.coinpip.com/map.txt -->
+    <string name="app_name">Skiing In Singapore</string>
+    <string name="button_mame">Load Map</string>
+    <string name="default_uri">http://s3-ap-southeast-1.amazonaws.com/geeks.redmart.com/coding-problems/map.txt</string>
+    <string name="map_loading">Loading map...</string>
+    <string name="sorting">Sorting...</string>
+    <string name="searching">Searching... this may take a while</string>
+    <string name="fail">Something went wrong</string>
+    <string name="success" formatted="false">Path found (drop of %d)! Dropping from %d to %d with length of %d</string>
+    <string name="success_title" formatted="false">Success</string>
+    <string name="error_title" formatted="false">Error</string>\
+    <string name="error" formatted="false">Your device must support at least 128mb heap memory size to run properly this application</string>
+</resources>
