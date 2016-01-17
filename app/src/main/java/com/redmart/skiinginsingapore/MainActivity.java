@@ -114,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initUI() {
-
         loadMapButton = (Button) findViewById(R.id.buttonMapLoad);
         progressBarLoading = (ProgressBar) findViewById(R.id.progressBarLoading);
         textStatus = (TextView) findViewById(R.id.textViewStatus);
@@ -130,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void unlockUI(final boolean unlocked) {
-
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -142,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void statusMessage(final String message) {
-
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -161,41 +158,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed()
-    {
+    public void onBackPressed() {
         super.onBackPressed();
         finish();
         System.exit(0);
     }
 
     protected void loadMap(String mapData) {
-
-        try {
-            mapData = mapData.replace("\r", "");
-            String[] rows = mapData.split("\n");
-            String[] size = rows[0].split(" ");
-            allMap = new Integer[Integer.parseInt(size[0])][Integer.parseInt(size[1])];
-            sortedCoords = new LinkedList<>();
-            for(int x = 1; x < rows.length; x++)
-            {
-                String[] cols = rows[x].split(" ");
-                statusMessage(getResources().getString(R.string.map_loading) + " " + x + "/" + (rows.length-1));
-                for(int y = 0; y < cols.length; y++) {
-                    allMap[x-1][y] = Integer.parseInt(cols[y]);
-                    sortedCoords.add(new Coords(x-1, y));
-                }
+        mapData = mapData.replace("\r", "");
+        String[] rows = mapData.split("\n");
+        String[] size = rows[0].split(" ");
+        allMap = new Integer[Integer.parseInt(size[0])][Integer.parseInt(size[1])];
+        sortedCoords = new LinkedList<>();
+        for(int x = 1; x < rows.length; x++)
+        {
+            String[] cols = rows[x].split(" ");
+            statusMessage(getResources().getString(R.string.map_loading) + " " + x + "/" + (rows.length-1));
+            for(int y = 0; y < cols.length; y++) {
+                allMap[x-1][y] = Integer.parseInt(cols[y]);
+                sortedCoords.add(new Coords(x-1, y));
             }
-        }catch (final Exception e) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                }
-            });
-            throw e;
         }
-
     }
 
     protected void sortCoords() {
@@ -252,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected Result findLongestPath(final int x, final int y, final int droppingFrom, Coords startCoodrs, List<Step> path) {
-
         Result result = new Result(1, droppingFrom, allMap[x][y], startCoodrs, path);
         //Uncomment this if you need to track full path (will increase execution time)
         //trackPath(x, y, result);
@@ -300,7 +282,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void showDialog(final String title, final String message, final boolean reload) {
-
         AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
         alertDialog.setTitle(title);
         alertDialog.setMessage(message);
@@ -321,13 +302,12 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
-
     }
 
     private View.OnClickListener LoadMap = new View.OnClickListener() {
+
         @Override
         public void onClick(View v) {
-
             if(!isOnline())
             {
                 Toast.makeText(getApplicationContext(), "No connection to Internet",
@@ -352,6 +332,8 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     Toast.makeText(getApplicationContext(), errorMessage,
                             Toast.LENGTH_LONG).show();
+                    statusMessage("");
+                    unlockUI(true);
                 }
             });
         }
@@ -383,8 +365,15 @@ public class MainActivity extends AppCompatActivity {
                 sortCoords();
                 statusMessage(getResources().getString(R.string.searching));
                 search();
-            }catch(Exception e)
+            }catch(final Exception e)
             {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
                 return false;
             }
 
@@ -397,11 +386,11 @@ public class MainActivity extends AppCompatActivity {
                 showResult(System.currentTimeMillis() - startTime);
             else
                 statusMessage(getResources().getString(R.string.fail));
-            sortedCoords.clear();
+            if(sortedCoords != null)
+                sortedCoords.clear();
             unlockUI(true);
+            statusMessage("");
         }
-
-
 
         @Override
         protected void onPreExecute() {}
