@@ -160,6 +160,14 @@ public class MainActivity extends AppCompatActivity {
             backgroundTask.cancel(true);
     }
 
+    @Override
+    public void onBackPressed()
+    {
+        super.onBackPressed();
+        finish();
+        System.exit(0);
+    }
+
     protected void loadMap(String mapData) {
 
         try {
