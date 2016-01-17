@@ -21,6 +21,8 @@ import android.widget.Toast;
 
 import com.redmart.skiinginsingapore.util.AsyncHttpURLConnection;
 
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -33,11 +35,25 @@ public class MainActivity extends AppCompatActivity {
         public int length;
         public final int droppingFrom;
         public final int droppingTo;
+        public final Coords startCoords;
+        public List<Step> path;
 
-        public Result(int length, int droppingFrom, int droppingTo) {
+        public Result(final int length, final int droppingFrom, final int droppingTo, final Coords startCoords, List<Step> path) {
             this.length = length;
-            this.droppingTo = droppingTo;
             this.droppingFrom = droppingFrom;
+            this.startCoords = startCoords;
+            this.path = path;
+            this.droppingTo = droppingTo;
+        }
+    }
+
+    private class Step {
+        public final int value;
+        public final Coords coords;
+
+        public Step(int value, Coords coords) {
+            this.value = value;
+            this.coords = coords;
         }
     }
 
@@ -50,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
             this.y = y;
         }
     }
+
+
 
     private Button loadMapButton;
     private ProgressBar progressBarLoading;
@@ -91,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         backgroundTask = null;
         allMap = null;
         httpConnection = null;
-        maxResult = new Result(0,0,0);
+        maxResult = new Result(0, 0, 0, null, null);
         sortedCoords = null;
     }
 
@@ -190,7 +208,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected Result max(Result r1, Result r2, int increment) {
-        if((r1.length == r2.length + increment && (r1.droppingFrom - r1.droppingTo) < (r2.droppingFrom - r2.droppingTo)) || r1.length < r2.length + increment) {
+        if((r1.length == r2.length + increment && (r1.droppingFrom - r1.droppingTo) < (r2.droppingFrom - r2.droppingTo)) ||
+                r1.length < r2.length + increment) {
             r2.length += increment;
             return r2;
         }
@@ -198,13 +217,47 @@ public class MainActivity extends AppCompatActivity {
             return r1;
     }
 
-    protected Result findLongestPath(final int x, final int y, final int droppingFrom) {
-        Result result = new Result(1, droppingFrom, allMap[x][y]);
+    protected boolean coorectNextStep(final int x, final int y, final Step step){
+        if((Math.abs(x - step.coords.x) == 0 && Math.abs(y - step.coords.y) == 1 ||
+                Math.abs(x - step.coords.x) == 1 && Math.abs(y - step.coords.y) == 0) &&
+                step.value > allMap[x][y])
+            return true;
+        return false;
+    }
 
-        if(y < allMap[x].length-1 && allMap[x][y] > allMap[x][y+1])  result = max(result, findLongestPath(x, y+1, droppingFrom), 1);
-        if(y > 0 && allMap[x][y] > allMap[x][y-1]) result = max(result, findLongestPath(x, y-1, droppingFrom), 1);
-        if(x < allMap.length-1 && allMap[x][y] > allMap[x+1][y]) result = max(result, findLongestPath(x+1, y, droppingFrom), 1);
-        if(x > 0 && allMap[x][y] > allMap[x-1][y]) result = max(result, findLongestPath(x-1, y, droppingFrom), 1);
+    protected void trackPath(final int x, final int y, Result result) {
+        int droppingTo = allMap[x][y];
+        for(int i = result.path.size()-1; i >= 0; i--) {
+            Step step = result.path.get(i);
+            if (coorectNextStep(x, y, step)) {
+                if(i < result.path.size()-1) {
+                    List<Step> list_p = new ArrayList<Step>();
+                    list_p.addAll(result.path);
+                    for(int j = result.path.size()-1; j > i; j--)
+                        list_p.remove(j);
+                    result.path = list_p;
+                }
+                result.path.add(new Step(droppingTo, new Coords(x, y)));
+                break;
+            }
+        }
+    }
+
+    protected Result findLongestPath(final int x, final int y, final int droppingFrom, Coords startCoodrs, List<Step> path) {
+
+        Result result = new Result(1, droppingFrom, allMap[x][y], startCoodrs, path);
+        //Uncomment this if you need to track full path (will increase execution time)
+        //trackPath(x, y, result);
+
+        if(y < allMap[x].length-1 && allMap[x][y] > allMap[x][y+1])
+            result = max(result, findLongestPath(x, y+1, droppingFrom, startCoodrs, result.path), 1);
+        if(y > 0 && allMap[x][y] > allMap[x][y-1])
+            result = max(result, findLongestPath(x, y-1, droppingFrom, startCoodrs, result.path), 1);
+        if(x < allMap.length-1 && allMap[x][y] > allMap[x+1][y])
+            result = max(result, findLongestPath(x+1, y, droppingFrom, startCoodrs, result.path), 1);
+        if(x > 0 && allMap[x][y] > allMap[x-1][y])
+            result = max(result, findLongestPath(x-1, y, droppingFrom, startCoodrs, result.path), 1);
+
         maxResult = max(maxResult,result, 0);
         return result;
     }
@@ -213,19 +266,29 @@ public class MainActivity extends AppCompatActivity {
         Iterator<Coords> i_coords = sortedCoords.iterator();
         while(i_coords.hasNext()) {
             Coords coords = i_coords.next();
-            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y]);
+            List<Step> path = new ArrayList<>();
+            path.add(new Step(allMap[coords.x][coords.y], new Coords(coords.x, coords.y)));
+            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y], new Coords(coords.x, coords.y), path);
             if(r.length >= r.droppingFrom || maxResult.length >= r.droppingFrom)
                 break;
         }
     }
 
-    protected void showResult() {
+    protected void showResult(long executionTime) {
         int drop = (maxResult.droppingFrom - maxResult.droppingTo);
         String message = getResources().getString(R.string.success);
-        message = String.format(message, drop, maxResult.droppingFrom, maxResult.droppingTo, maxResult.length);
+        String path = "";
+        for(Step box : maxResult.path)
+            path += box.value + "->";
+        DecimalFormat decimalFormat = new DecimalFormat();
+        decimalFormat.setDecimalSeparatorAlwaysShown(false);
+        message = String.format(message, decimalFormat.format(((double)executionTime/1000.00)), drop, maxResult.droppingFrom, maxResult.startCoords.x, maxResult.startCoords.y, maxResult.droppingTo, maxResult.length);
+        if(path.length() > 2 && maxResult.path.size() > 1) {
+            path = path.substring(0, path.length() - 2);
+            message += String.format(getResources().getString(R.string.path), path);
+        }
 
         showDialog(getResources().getString(R.string.success_title), message, true);
-
     }
 
     protected void showDialog(final String title, final String message, final boolean reload) {
@@ -300,10 +363,13 @@ public class MainActivity extends AppCompatActivity {
 
     private class BackgroundExecution extends AsyncTask<String, Void, Boolean> {
 
+        private long startTime;
+
         @Override
         protected Boolean doInBackground(String... params) {
 
             try {
+                startTime =  System.currentTimeMillis();
                 loadMap(params[0]);
                 statusMessage(getResources().getString(R.string.sorting));
                 sortCoords();
@@ -320,7 +386,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             if(result)
-                showResult();
+                showResult(System.currentTimeMillis() - startTime);
             else
                 statusMessage(getResources().getString(R.string.fail));
             sortedCoords.clear();

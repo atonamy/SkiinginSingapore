@@ -7,7 +7,8 @@
     <string name="sorting">Sorting...</string>
     <string name="searching">Searching... this may take a while</string>
     <string name="fail">Something went wrong</string>
-    <string name="success" formatted="false">Path found (drop of %d)! Dropping from %d to %d with length of %d</string>
+    <string name="success" formatted="false">Execution time %sseconds\nPath found (drop of %d)!\nDropping from %d(x: %d, y: %d) to %d with length of %d</string>
+    <string name="path" formatted="false">\nAnd path is %s</string>
     <string name="success_title" formatted="false">Success</string>
     <string name="error_title" formatted="false">Error</string>\
     <string name="error" formatted="false">Your device must support at least 128mb heap memory size to run properly this application</string>
