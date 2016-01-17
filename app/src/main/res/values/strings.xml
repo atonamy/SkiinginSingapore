@@ -7,7 +7,7 @@
     <string name="sorting">Sorting...</string>
     <string name="searching">Searching... this may take a while</string>
     <string name="fail">Something went wrong</string>
-    <string name="success" formatted="false">Execution time %sseconds\nPath found (drop of %d)!\nDropping from %d(x: %d, y: %d) to %d with length of %d</string>
+    <string name="success" formatted="false">Execution time %s seconds\nPath found (drop of %d)!\nDropping from %d(x: %d, y: %d) to %d with length of %d</string>
     <string name="path" formatted="false">\nAnd path is %s</string>
     <string name="success_title" formatted="false">Success</string>
     <string name="error_title" formatted="false">Error</string>\
