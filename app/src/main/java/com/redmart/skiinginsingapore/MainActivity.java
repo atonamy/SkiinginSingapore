@@ -31,6 +31,8 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final static int recordFilter = 3;
+
     private class Result {
         public int length;
         public final int droppingFrom;
@@ -38,7 +40,8 @@ public class MainActivity extends AppCompatActivity {
         public final Coords startCoords;
         public List<Step> path;
 
-        public Result(final int length, final int droppingFrom, final int droppingTo, final Coords startCoords, List<Step> path) {
+        public Result(final int length, final int droppingFrom, final int droppingTo,
+                      final Coords startCoords, List<Step> path) {
             this.length = length;
             this.droppingFrom = droppingFrom;
             this.startCoords = startCoords;
@@ -67,6 +70,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private interface Updater {
+        public void postUpdate(String message);
+    }
+
 
 
     private Button loadMapButton;
@@ -78,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
     private Result maxResult;
     private List<Coords> sortedCoords;
     private BackgroundExecution backgroundTask;
+    private Updater onThread;
+
 
 
     @Override
@@ -92,7 +101,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void hideKeyboard(View view) {
-        InputMethodManager inputMethodManager =(InputMethodManager)getSystemService(Activity.INPUT_METHOD_SERVICE);
+        InputMethodManager inputMethodManager =
+                (InputMethodManager)getSystemService(Activity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
@@ -102,7 +112,8 @@ public class MainActivity extends AppCompatActivity {
         long maxMemory = rt.maxMemory();
         maxMemory = (maxMemory/1024)/1024;
         if(maxMemory < 128)
-            showDialog(getResources().getString(R.string.error_title), getResources().getString(R.string.error), false);
+            showDialog(getResources().getString(R.string.error_title),
+                    getResources().getString(R.string.error), false);
     }
 
     private void initDefaults() {
@@ -111,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         httpConnection = null;
         maxResult = new Result(0, 0, 0, null, null);
         sortedCoords = null;
+        onThread = null;
     }
 
     private void initUI() {
@@ -140,12 +152,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void statusMessage(final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                textStatus.setText(message);
-            }
-        });
+        if(onThread != null)
+            onThread.postUpdate(message);
+        else
+            textStatus.setText(message);
     }
 
     @Override
@@ -170,10 +180,15 @@ public class MainActivity extends AppCompatActivity {
         String[] size = rows[0].split(" ");
         allMap = new Integer[Integer.parseInt(size[0])][Integer.parseInt(size[1])];
         sortedCoords = new LinkedList<>();
+        final double percent = ((double)(rows.length) / 100);
+        final int step = (int) Math.round(percent * recordFilter);
+
         for(int x = 1; x < rows.length; x++)
         {
             String[] cols = rows[x].split(" ");
-            statusMessage(getResources().getString(R.string.map_loading) + " " + x + "/" + (rows.length-1));
+            if(x % step == 0 || x == 1 || x == rows.length-1)
+                statusMessage(getResources().getString(R.string.map_loading) + " " +
+                        Math.round((double)x / percent) + "% complete");
             for(int y = 0; y < cols.length; y++) {
                 allMap[x-1][y] = Integer.parseInt(cols[y]);
                 sortedCoords.add(new Coords(x-1, y));
@@ -199,7 +214,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected Result max(Result r1, Result r2, int increment) {
-        if((r1.length == r2.length + increment && (r1.droppingFrom - r1.droppingTo) < (r2.droppingFrom - r2.droppingTo)) ||
+        if((r1.length == r2.length + increment &&
+                (r1.droppingFrom - r1.droppingTo) < (r2.droppingFrom - r2.droppingTo)) ||
                 r1.length < r2.length + increment) {
             r2.length += increment;
             return r2;
@@ -234,10 +250,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected Result findLongestPath(final int x, final int y, final int droppingFrom, Coords startCoodrs, List<Step> path) {
+    protected Result findLongestPath(final int x, final int y, final int droppingFrom,
+                                     Coords startCoodrs, List<Step> path) {
         Result result = new Result(1, droppingFrom, allMap[x][y], startCoodrs, path);
-        //Uncomment this if you need to track full path (will increase execution time)
-        //trackPath(x, y, result);
+        trackPath(x, y, result);
 
         if(y < allMap[x].length-1 && allMap[x][y] > allMap[x][y+1])
             result = max(result, findLongestPath(x, y+1, droppingFrom, startCoodrs, result.path), 1);
@@ -253,14 +269,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void search() {
+        final int length =  sortedCoords.size()-1;
+        final double percent = ((double)(length+1) / 100);
+        final int step = (int) Math.round(percent * recordFilter);
         Iterator<Coords> i_coords = sortedCoords.iterator();
+        int count = 0;
+
         while(i_coords.hasNext()) {
             Coords coords = i_coords.next();
             List<Step> path = new ArrayList<>();
             path.add(new Step(allMap[coords.x][coords.y], new Coords(coords.x, coords.y)));
-            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y], new Coords(coords.x, coords.y), path);
+            if(count % step == 0 || count == 0 || count == length)
+                statusMessage(getResources().getString(R.string.searching) + " " +
+                        Math.round((double)count / percent) + "% complete");
+            Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y],
+                    new Coords(coords.x, coords.y), path);
             if(r.length >= r.droppingFrom || maxResult.length >= r.droppingFrom)
                 break;
+            count++;
         }
     }
 
@@ -268,11 +294,14 @@ public class MainActivity extends AppCompatActivity {
         int drop = (maxResult.droppingFrom - maxResult.droppingTo);
         String message = getResources().getString(R.string.success);
         String path = "";
+
         for(Step box : maxResult.path)
             path += box.value + "->";
         DecimalFormat decimalFormat = new DecimalFormat();
         decimalFormat.setDecimalSeparatorAlwaysShown(false);
-        message = String.format(message, decimalFormat.format(((double)executionTime/1000.00)), drop, maxResult.droppingFrom, maxResult.startCoords.x, maxResult.startCoords.y, maxResult.droppingTo, maxResult.length);
+        message = String.format(message, decimalFormat.format(((double)executionTime/1000.00)), drop,
+                maxResult.droppingFrom, maxResult.startCoords.x, maxResult.startCoords.y,
+                maxResult.droppingTo, maxResult.length);
         if(path.length() > 2 && maxResult.path.size() > 1) {
             path = path.substring(0, path.length() - 2);
             message += String.format(getResources().getString(R.string.path), path);
@@ -317,9 +346,10 @@ public class MainActivity extends AppCompatActivity {
 
             initDefaults();
             unlockUI(false);
-            httpConnection = new AsyncHttpURLConnection("GET", uriToMap.getText().toString(), "", HttpEvents);
+            statusMessage(getResources().getString(R.string.data));
+            httpConnection = new AsyncHttpURLConnection("GET", uriToMap.getText().toString(), "",
+                    HttpEvents);
             httpConnection.submit();
-            statusMessage(getResources().getString(R.string.map_loading));
         }
     };
 
@@ -351,22 +381,32 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private class BackgroundExecution extends AsyncTask<String, Void, Boolean> {
+    private class BackgroundExecution extends AsyncTask<String, String, Boolean> {
 
         private long startTime;
 
+
+        private Updater updater =  new Updater() {
+
+            @Override
+            public void postUpdate(String message) {
+                publishProgress(message);
+            }
+        };
+
         @Override
         protected Boolean doInBackground(String... params) {
+            onThread = updater;
 
             try {
                 startTime =  System.currentTimeMillis();
+                statusMessage(getResources().getString(R.string.map_loading));
                 loadMap(params[0]);
                 statusMessage(getResources().getString(R.string.sorting));
                 sortCoords();
                 statusMessage(getResources().getString(R.string.searching));
                 search();
-            }catch(final Exception e)
-            {
+            } catch(final Exception e) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -382,6 +422,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Boolean result) {
+            onThread = null;
+
             if(result)
                 showResult(System.currentTimeMillis() - startTime);
             else
@@ -396,7 +438,11 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {}
 
         @Override
-        protected void onProgressUpdate(Void... nothing ) {}
+        protected void onProgressUpdate(final String... messages ) {
+            textStatus.setText(messages[0]);
+        }
     }
+
+
 
 }

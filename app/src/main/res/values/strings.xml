@@ -3,13 +3,14 @@
     <string name="app_name">Skiing In Singapore</string>
     <string name="button_mame">Load Map</string>
     <string name="default_uri">http://s3-ap-southeast-1.amazonaws.com/geeks.redmart.com/coding-problems/map.txt</string>
+    <string name="data">Retrieving data...</string>
     <string name="map_loading">Loading map...</string>
     <string name="sorting">Sorting...</string>
-    <string name="searching">Searching... this may take a while</string>
+    <string name="searching">Searching... </string>
     <string name="fail">Something went wrong</string>
     <string name="success" formatted="false">Execution time %s seconds\nThe longest and steepest path found (drop of %d)!\nFrom %d(x: %d, y: %d) to %d with length=%d</string>
     <string name="path" formatted="false">\nAnd exact path is %s</string>
-    <string name="success_title" formatted="false">Success</string>
-    <string name="error_title" formatted="false">Error</string>\
-    <string name="error" formatted="false">Your device must support at least 128mb heap memory size to run properly this application</string>
+    <string name="success_title">Success</string>
+    <string name="error_title">Error</string>
+    <string name="error">Your device must support at least 128mb heap memory size to run properly this application</string>
 </resources>
