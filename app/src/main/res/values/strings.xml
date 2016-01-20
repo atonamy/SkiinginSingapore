@@ -2,7 +2,7 @@
     <!-- http://s3-ap-southeast-1.amazonaws.com/geeks.redmart.com/coding-problems/map.txt https://api.coinpip.com/map.txt -->
     <string name="app_name">Skiing In Singapore</string>
     <string name="button_mame">Load Map</string>
-    <string name="default_uri">https://api.coinpip.com/map.txt</string>
+    <string name="default_uri">http://s3-ap-southeast-1.amazonaws.com/geeks.redmart.com/coding-problems/map.txt</string>
     <string name="data">Retrieving data...</string>
     <string name="map_loading">Loading map...</string>
     <string name="sorting">Sorting...</string>
