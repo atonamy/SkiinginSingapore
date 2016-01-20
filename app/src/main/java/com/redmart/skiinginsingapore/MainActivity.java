@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
         for(int x = 1; x < rows.length; x++)
         {
             String[] cols = rows[x].split(" ");
-            if(x % step == 0 || x == 1 || x == rows.length-1)
+            if(step == 0 || x % step == 0 || x == 1 || x == rows.length-1)
                 statusMessage(getResources().getString(R.string.map_loading) + " " +
                         Math.round((double)x / percent) + "% complete");
             for(int y = 0; y < cols.length; y++) {
@@ -279,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
             Coords coords = i_coords.next();
             List<Step> path = new ArrayList<>();
             path.add(new Step(allMap[coords.x][coords.y], new Coords(coords.x, coords.y)));
-            if(count % step == 0 || count == 0 || count == length)
+            if(step == 0 || count % step == 0 || count == 0 || count == length)
                 statusMessage(getResources().getString(R.string.searching) + " " +
                         Math.round((double)count / percent) + "% complete");
             Result r = findLongestPath(coords.x, coords.y, allMap[coords.x][coords.y],
